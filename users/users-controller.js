@@ -43,7 +43,7 @@ const CreateUser = async (req, res) => {
     const token = await jwt.sign({ email: user.email, _id: user._id}, process.env.JWT_SECRET, { expiresIn: '1h' })
 
     // Send email verification link
-    const verificationLink = `https://peerwize-backend.vercel.app/users/verify-email?token=${token}`;
+    const verificationLink = `https://peerwize-api.vercel.app/users/verify-email?token=${token}`;
     // const verificationLink = `http://${process.env.HOST}:${process.env.PORT}/users/verify-email?token=${token}`;
     
     const htmlContent = `
@@ -151,7 +151,7 @@ const UserVerifyEmail = async (req, res) => {
     jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
       if (err) {
         if (err.name === 'TokenExpiredError') {
-          const verificationLink = `https://peerwize-backend.vercel.app/users/resend-verification-email`
+          const verificationLink = `https://peerwize-api.vercel.app/users/resend-verification-email`
           // const verificationLink = `http://${process.env.HOST}:${process.env.PORT}/users/resend-verification-email`
           return res.status(410).json({
             message: 'Verification link has expired. Please request a new verification link with your email here - ',
@@ -233,7 +233,7 @@ const UserReVerifyEmail = async (req, res) => {
     const token = jwt.sign({ email: user.email, _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Send email verification link
-    const verificationLink = `https://peerwize-backend.vercel.app/users/verify-email?token=${token}`;
+    const verificationLink = `https://peerwize-api.vercel.app/users/verify-email?token=${token}`;
     // const verificationLink = `http://${process.env.HOST}:${process.env.PORT}/users/verify-email?token=${token}`;
     
     const htmlContent = `
@@ -340,7 +340,7 @@ const UserLogin = async (req, res) => {
     }
 
     if (!user.isVerified) {
-      const verificationLink = `https://peerwize-backend.vercel.app/users/resend-verification-email`
+      const verificationLink = `https://peerwize-api.vercel.app/users/resend-verification-email`
       // const verificationLink = `http://${process.env.HOST}:${process.env.PORT}/users/resend-verification-email`
       return res.status(403).json({
         message: 'Email not verified. Check your Email for verification link or request a new one here - ',
@@ -402,7 +402,7 @@ const UserForgotPassword = async (req, res) => {
     const token = await jwt.sign({ email: user.email, _id: user._id}, process.env.JWT_SECRET, { expiresIn: '5m' })
   
       // Send email password reset link
-      const resetLink = `https://peerwize-backend.vercel.app/users/reset-password?token=${token}`;
+      const resetLink = `https://peerwize-api.vercel.app/users/reset-password?token=${token}`;
       // const resetLink = `http://${process.env.HOST}:${process.env.PORT}/users/reset-password?token=${token}`;
       
       const htmlContent = `
