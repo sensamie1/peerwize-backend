@@ -30,14 +30,14 @@ const CreateUser = async (req, res) => {
     }
   
     const user = await UserModel.create({
-      first_name: userFromRequest.first_name,
-      last_name: userFromRequest.last_name,
+      firstName: userFromRequest.firstName,
+      lastName: userFromRequest.lastName,
       email: userFromRequest.email,
       country: userFromRequest.country,
       city: userFromRequest.city,
-      phone_number: userFromRequest.phone_number,
+      phoneNumber: userFromRequest.phoneNumber,
       password: userFromRequest.password,
-      confirm_password: userFromRequest.confirm_password
+      confirmPassword: userFromRequest.confirmPassword
     });
   
     const token = await jwt.sign({ email: user.email, _id: user._id}, process.env.JWT_SECRET, { expiresIn: '1h' })
@@ -113,8 +113,8 @@ const CreateUser = async (req, res) => {
     // Filter out sensitive fields
     const filteredUser = {
       _id: user._id,
-      first_name: user.first_name,
-      last_name: user.last_name,
+      firstName: user.firstName,
+      lastName: user.lastName,
       email: user.email,
       bio: user.bio,
       track: user.track,
@@ -123,7 +123,7 @@ const CreateUser = async (req, res) => {
       dob: user.dob,
       country: user.country,
       city: user.city,
-      phone_number: user.phone_number
+      phoneNumber: user.phoneNumber
     };
 
     logger.info('[CreateUser] => Create user process done.')
@@ -186,8 +186,8 @@ const UserVerifyEmail = async (req, res) => {
       // Filter out sensitive fields
       const filteredUser = {
         _id: user._id,
-        first_name: user.first_name,
-        last_name: user.last_name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         bio: user.bio,
         track: user.track,
@@ -195,7 +195,7 @@ const UserVerifyEmail = async (req, res) => {
         dob: user.dob,
         country: user.country,
         city: user.city,
-        phone_number: user.phone_number,
+        phoneNumber: user.phoneNumber,
         dob: user.dob
       };
 
@@ -356,8 +356,7 @@ const UserLogin = async (req, res) => {
     // Filter out sensitive fields
     const filteredUser = {
       _id: user._id,
-      first_name: user.first_name,
-      last_name: user.last_name,
+      firstName: user.lastName,
       email: user.email,
       bio: user.bio,
       track: user.track,
@@ -365,7 +364,7 @@ const UserLogin = async (req, res) => {
       dob: user.dob,
       country: user.country,
       city: user.city,
-      phone_number: user.phone_number,
+      phoneNumber: user.phoneNumber,
       dob: user.dob
     };
     logger.info('[UserLogin] => User login process done')
@@ -502,7 +501,7 @@ const UserResetPassword = async (req, res) => {
       });
     }
 
-    const newPassword = req.body.new_password;
+    const newPassword = req.body.newPassword;
 
     // Check if the new password is the same as the current password
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
@@ -514,7 +513,7 @@ const UserResetPassword = async (req, res) => {
     }
 
     // Check if the new password is one of the old passwords
-    for (const oldPassword of user.old_passwords) {
+    for (const oldPassword of user.oldPasswords) {
       const isOldPassword = await bcrypt.compare(newPassword, oldPassword);
       if (isOldPassword) {
         return res.status(400).json({
@@ -524,11 +523,11 @@ const UserResetPassword = async (req, res) => {
       }
     }
 
-    // // Update old_passwords and set the new password
-    user.old_passwords.push(user.password);
+    // // Update oldPasswords and set the new password
+    user.oldPasswords.push(user.password);
     user.password = newPassword;
 
-    // Save the user with the new password and updated old_passwords
+    // Save the user with the new password and updated oldPasswords
     await user.save();
 
     logger.info('[UserResetPassword] => User reset password process done.');
@@ -563,7 +562,7 @@ const updateUser = async (req, res) => {
     const updateFields = req.body;
 
     const allowedUpdates = [
-      'first_name', 'last_name', 'email', 'bio', 'dob', 'phone_number', 'state',
+      'firstName', 'lastName', 'email', 'bio', 'dob', 'phoneNumber', 'state',
       'country', 'city', 'track', 'skills'
     ];
 
@@ -612,8 +611,8 @@ const updateUser = async (req, res) => {
         // Filter out sensitive fields
         const filteredUser = {
           _id: user._id,
-          first_name: user.first_name,
-          last_name: user.last_name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           bio: user.bio,
           track: user.track,
@@ -621,7 +620,7 @@ const updateUser = async (req, res) => {
           dob: user.dob,
           country: user.country,
           city: user.city,
-          phone_number: user.phone_number
+          phoneNumber: user.phoneNumber
         };
 
     logger.info('[updateUser] => User update process done.');

@@ -6,18 +6,18 @@ const ValidateUserCreation = async (req, res, next) => {
   try {
     logger.info('[ValidateUserCreation] => Validate user creation process started...');
     const schema = joi.object({
-      user_type: joi.string().valid('admin', 'learner', 'expert').default('learner'),
-      first_name: joi.string().required(),
-      last_name: joi.string().required(),
+      userType: joi.string().valid('admin', 'learner', 'expert').default('learner'),
+      firstName: joi.string().required(),
+      lastName: joi.string().required(),
       dob: joi.date().optional(),
       email: joi.string().email().required(),
       password: joi.string().required(),
-      confirm_password: joi.string().valid(joi.ref('password')).required()
+      confirmPassword: joi.string().valid(joi.ref('password')).required()
       .messages({
         'any.only': 'Password does not match',
         'any.required': 'Confirm password is required'
       }),
-      phone_number: joi.string().required(),
+      phoneNumber: joi.string().required(),
       state: joi.string().optional(),
       country: joi.string().required(),
       city: joi.string().required(),
@@ -98,8 +98,8 @@ const UserResetPasswordValidation = async (req, res, next) => {
   try {
     logger.info('[UserResetPasswordValidation] => User reset password validation process started...');
     const schema = joi.object({
-      new_password: joi.string().required(),
-      confirm_password: joi.string().valid(joi.ref('new_password')).required()
+      newPassword: joi.string().required(),
+      confirmPassword: joi.string().valid(joi.ref('newPassword')).required()
       .messages({
         'any.only': 'Password does not match',
         'any.required': 'Confirm password is required'
