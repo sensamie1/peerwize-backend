@@ -1,8 +1,9 @@
 const UserModel = require('../models/user-model');
+const BlacklistModel = require('../models/blacklist-model');
 const jwt = require('jsonwebtoken');
 const logger = require('../logger');
 const nodemailer = require('nodemailer');
-const bcrypt = require('bcryptjs')
+const bcrypt = require('bcryptjs');
 
 
 require('dotenv').config()
@@ -351,12 +352,13 @@ const UserLogin = async (req, res) => {
   
     const token = await jwt.sign({ email: user.email, _id: user._id}, 
       process.env.JWT_SECRET, 
-      { expiresIn: '1h' })
+      { expiresIn: '1d' })
 
     // Filter out sensitive fields
     const filteredUser = {
       _id: user._id,
-      firstName: user.lastName,
+      firstName: user.firstName,
+      lastName: user.lastName,
       email: user.email,
       bio: user.bio,
       track: user.track,
@@ -367,6 +369,11 @@ const UserLogin = async (req, res) => {
       phoneNumber: user.phoneNumber,
       dob: user.dob
     };
+
+    // Set the token in the cookie
+    res.cookie('jwt', token, { httpOnly: true, secure: true, sameSite: 'Strict', maxAge: 86400000 });
+
+    console.log(req.headers);
     logger.info('[UserLogin] => User login process done')
     return res.status(200).json({
       message: 'User login successful',
@@ -383,6 +390,42 @@ const UserLogin = async (req, res) => {
       })
   }
 }
+
+  const UserLogout = async (req, res) => {
+    try {
+      logger.info('[UserLogout] => User logout process started');
+
+      console.log(req.headers);
+      const authHeader = req.headers['cookie'];
+      if (!authHeader) return res.sendStatus(204); // No content
+  
+      const cookie = authHeader.split('=')[1];
+      if (!cookie) return res.sendStatus(204);
+  
+      const checkIfBlacklisted = await BlacklistModel.findOne({ token: cookie });
+  
+      if (checkIfBlacklisted) return res.sendStatus(204);
+  
+      const newBlacklist = new BlacklistModel({ token: cookie });
+      await newBlacklist.save();
+
+      // Clear the JWT token cookie
+      res.clearCookie('cookie', { httpOnly: true, secure: true, sameSite: 'Strict' });
+
+      logger.info('[UserLogout] => User logout process done');
+      return res.status(200).json({
+        message: 'User logout successful',
+        success: true
+      });
+    } catch (error) {
+      logger.error(error.message);
+      return res.status(500).json({
+        message: 'Server Error',
+        success: false,
+        data: null
+      });
+    }
+  };
 
 const UserForgotPassword = async (req, res) => {
   try {
@@ -551,14 +594,11 @@ const UserResetPassword = async (req, res) => {
   }
 };
 
-
 const updateUser = async (req, res) => {
   try {
     logger.info('[updateUser] => User update process started.');
 
-    const token = req.query.token;
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded._id; // Get user ID from decoded token
+    const { user } = req;
     const updateFields = req.body;
 
     const allowedUpdates = [
@@ -566,39 +606,20 @@ const updateUser = async (req, res) => {
       'country', 'city', 'track', 'skills'
     ];
 
-    const isValidOperation = Object.keys(updateFields).every(field => 
-      allowedUpdates.includes(field)
-    );
+    const isValidOperation = Object.keys(updateFields).every(field => allowedUpdates.includes(field));
 
     if (!isValidOperation) {
-      return res.status(400).json({
-        message: 'Invalid updates!',
-        success: false
-      });
+      return res.status(400).json({ message: 'Invalid updates!', success: false });
     }
 
-    const user = await UserModel.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        message: 'User not found.',
-        success: false
-      });
+    if (updateFields.dob && user.dob) {
+      return res.status(400).json({ message: 'Date of birth cannot be modified once set.', success: false });
     }
-
-      // Check if the dob field is being modified and if it has already been set
-      if (updateFields.dob && user.dob) {
-        return res.status(400).json({
-          message: 'Date of birth cannot be modified once set.',
-          success: false
-        });
-      }
 
     Object.keys(updateFields).forEach(field => {
       if ((field === 'track' || field === 'skills') && Array.isArray(updateFields[field])) {
-        // Append new skills or track items to the existing array
         user[field] = [...new Set([...user[field], ...updateFields[field]])];
       } else if (field === 'dob') {
-        // Convert the date string to a Date object
         const [day, month, year] = updateFields[field].split('-');
         user[field] = new Date(`${year}-${month}-${day}`);
       } else {
@@ -608,49 +629,37 @@ const updateUser = async (req, res) => {
 
     await user.save();
 
-        // Filter out sensitive fields
-        const filteredUser = {
-          _id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          bio: user.bio,
-          track: user.track,
-          skills: user.skills,
-          dob: user.dob,
-          country: user.country,
-          city: user.city,
-          phoneNumber: user.phoneNumber
-        };
+    const filteredUser = {
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      bio: user.bio,
+      track: user.track,
+      skills: user.skills,
+      dob: user.dob,
+      country: user.country,
+      city: user.city,
+      phoneNumber: user.phoneNumber
+    };
 
     logger.info('[updateUser] => User update process done.');
-    return res.status(200).json({
-      message: 'User updated successfully.',
-      success: true,
-      user: filteredUser
-    });
+    return res.status(200).json({ message: 'User updated successfully.', success: true, user: filteredUser });
   } catch (error) {
+    console.error('User update error:', error);
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        message: 'Unauthorized: Invalid or expired token.',
-        success: false
-      });
-    } else {
-      console.error('User update error:', error);
-      return res.status(500).json({
-        message: 'Internal server error.',
-        success: false
-      });
+      return res.status(401).json({ message: 'Unauthorized: Invalid or expired token.', success: false });
     }
+    return res.status(500).json({ message: 'Internal server error.', success: false });
   }
 };
-
 
 module.exports = {
   CreateUser,
   UserVerifyEmail,
   UserReVerifyEmail,
   UserLogin,
+  UserLogout,
   UserForgotPassword,
   UserResetPassword,
   updateUser

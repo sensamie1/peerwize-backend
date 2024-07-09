@@ -25,7 +25,10 @@ router.post('/forget-password', globalMiddleware.checkBody, middleware.UserForgo
 router.post('/reset-password', globalMiddleware.checkBody, middleware.UserResetPasswordValidation, controller.UserResetPassword)
 
 // Update user details
-router.patch('/update', globalMiddleware.checkBody, controller.updateUser);
+router.patch('/update',  globalMiddleware.bearerTokenAuth, globalMiddleware.checkBody, controller.updateUser);
+
+// User Logot 
+router.get('/logout', controller.UserLogout);
 
 
 
